@@ -452,7 +452,7 @@
       '九路の大陸、暦一〇二四年。',
       '黄昏の帝国が北の最後の砦を囲んで、ちょうど千日が過ぎた。',
       '',
-      '砦に残った兵は、わずか二十。',
+      '砦に残ったのは、わずか二十。',
       '歩兵が九人、香車と桂馬と銀と金がそれぞれ二人、飛車と角がひとりずつ。',
       'そして、まだ若い王がひとり。',
       '',
@@ -918,7 +918,7 @@
     { id: 's-pro', trigger: 'firstPromote', side: 0, roles: { a: 'promoted', b: 'S|G|any' }, lines: [['a', 'joy', '見ましたか、昇格です! 自分でも驚いてます!'], ['b', 'smug', '若いのは浮かれるのも早いのう。'], ['a', 'smug', 'いつか全員で一段上の兵になって、凱旋しましょう!']] },
     { id: 's-chk', trigger: 'checked', side: 0, roles: { a: 'G|any', b: 'S|any', c: 'K' }, lines: [['a', 'angry', '王手だ! 陣を固めろ!'], ['b', 'normal', '慌てるでない。退き道はまだある。'], ['c', 'normal', '皆、落ち着いてくれ。私はここにいる。']] },
     { id: 's-n10', trigger: 'narr10', side: 0, roles: { a: 'P', b: 'P|any' }, lines: [['a', 'normal', '霧が晴れたね。……帝国の旗、思ったより近い。'], ['b', 'normal', '怖い? 僕は怖い。でも、ここまで来たんだ。'], ['a', 'joy', 'うん。一歩ずつ、だね。']] },
-    { id: 's-n30', trigger: 'narr30', side: 0, roles: { a: 'S', b: 'N|any' }, lines: [['a', 'normal', '昔、わしは帝国に仕えておった。宝玉が来る前の帝国にな。'], ['b', 'normal', 'えっ、元帝国兵!? どんな国だったの?'], ['a', 'normal', '飢えた村に麦を配る、まっとうな国じゃった。……人は変わるものよ。']] },
+    { id: 's-n30', trigger: 'narr30', side: 0, roles: { a: 'S', b: 'N|any' }, lines: [['a', 'normal', '昔、わしはヴァルドラの軍におった。宝玉が来る前、南の将軍と呼ばれておったころじゃ。'], ['b', 'normal', 'えっ、黄昏帝の軍に!? どんな軍だったの?'], ['a', 'normal', '飢えた村に麦を配る、まっとうな軍じゃった。……人は変わるものよ。']] },
     { id: 's-n60', trigger: 'narr60', side: 0, roles: { a: 'L|any', b: 'G|any' }, lines: [['a', 'normal', '……日が傾いてきた。'], ['b', 'normal', '帝国の旗が赤い。黄昏の名のとおりだな。'], ['a', 'normal', '黄昏の次は夜だ。夜の次は、暁だ。']] },
     { id: 's-n90', trigger: 'narr90', side: 0, roles: { a: 'P|any', b: 'K' }, lines: [
       ['a', 'hurt', '……暁王様。僕、帝国に家族がいるんです。兄が帝国の兵になって。'],
@@ -1403,7 +1403,7 @@
       { work: '四条畷の戦', author: '菊池寛', base: '『日本合戦譚』(文春文庫)', url: 'https://www.aozora.gr.jp/cards/000083/card1369.html',
         used: '中興の崩壊と恩賞の不満、竜馬諫奏、父子の遺訓、橋から落ちた敵兵の救出、一直線の突撃・身代わり・強弓、伝承に少し嘘が混じることへの語り手の考え方(いずれも筋立てや考え方だけを取り入れ、文は引いていない)', changed: '人物と地名を架空のものに置き換え、将棋の盤上の場面に移した' },
       { work: '三国志 序', author: '吉川英治', base: '『三国志(一)』(講談社 吉川英治歴史時代文庫)', url: 'https://www.aozora.gr.jp/cards/001562/card52409.html',
-        used: '正史ではないという断り、詩のある戦記、人物は今も生きているという考え、夜更けに読んで叱られた思い出 (翻案)', changed: '語り部の言葉として短く書き直した' }
+        used: '詩のある戦記、人物は今も生きているという考え、夜更けに読んで叱られた思い出 (翻案)', changed: '語り部の言葉として短く書き直した' }
     ]
   };
 
@@ -2116,7 +2116,7 @@
       if (id === 'turncoat') vars['寝返り'] = (ev.turncoat && ev.turncoat.name) || '兵';
       if (id === 'decoy') vars['身代わり'] = (ev.decoy && ev.decoy.name) || '兵';
       if (id === 'strategy') vars['戦法'] = (ev.strategy && ev.strategy.story) || '';
-      if (id === 'warDead') vars['戦死'] = warDeadText(ev.warDead.names || []);
+      if (id === 'warDead') vars['戦死'] = warDeadText(ev.warDead.names || [], side);
       if (id === 'raised') vars['蘇り'] = raisedText(ev.raised.name, ev.raised.n);
       frags.push({ id: id, title: FRAGMENTS[id].title, text: fragmentText(id, side, vars) });
     });
@@ -2384,7 +2384,7 @@
     if (ev.strategy) add('strategy', fragmentText('strategy', side, { '戦法': ev.strategy.story || '' }));
     if (ev.castle) add('castle', fragmentText('castle', side, { '陣': ev.castle.story }));
     if ((ev.fallenCount || 0) >= 5 || ev.fallen === true) add('fallen', fragmentText('fallen', side));
-    if (ev.warDead && ev.warDead.names && ev.warDead.names.length) add('warDead', warDeadText(ev.warDead.names));
+    if (ev.warDead && ev.warDead.names && ev.warDead.names.length) add('warDead', warDeadText(ev.warDead.names, side));
     if (ev.raised && ev.raised.name && !sameRaised) add('raised', raisedText(ev.raised.name, ev.raised.n)); // 同じ駒の英雄の断片があれば一つにまとめる
     var hs = (ctx.houseState || {})[side], lostHeads = [];
     if (hs) Object.keys(hs).forEach(function (k) { if (hs[k] === 'lost') lostHeads.push(k); });
@@ -2594,7 +2594,7 @@
   }
   function returnKingLine(side) { return mk('k', 'K', side, 'joy', fill(pickFrom(RETURN_KING[side === 0 ? 's' : 'g'], 'rk' + side), side)); }
   // エピローグの断片: 戦死した者たち (名家の駒を優先して5つまで) / 蘇らされた者 (最も多く蘇った駒について一行)
-  function warDeadText(names) { return '戦に倒れ、二度と戻らなかった者たち。' + names.join('、') + '。その名は、北の砦の石に刻まれている。'; }
+  function warDeadText(names, side) { return '戦に倒れ、二度と戻らなかった者たち。' + names.join('、') + (side === 1 ? '。その名は、黄昏の都の石に刻まれている。' : '。その名は、北の砦の石に刻まれている。'); }
   var KANSUJI = ['', '一', '二', '三', '四', '五', '六', '七', '八', '九', '十'];
   function raisedText(name, n) {
     var k = KANSUJI[Math.min(n, 10)] || String(n);
@@ -2659,7 +2659,7 @@
   }
   var TILT = {
     light: { s: ['軍は慈悲の色を帯びはじめた', '暁の兵の顔に、やわらかな光が差した', '軍の中に、誰も見捨てないという声が満ちてきた'], g: ['帝国の陣に、思いがけず温かな風が吹いた', '帝国の兵が敵にも礼を尽くしはじめた', '黄昏の軍に、かすかな慈悲の色が差した'] },
-    shadow: { s: ['軍に冷たい風が吹きはじめた', '暁の兵の目から、迷いが消えた。代わりに、何かも消えた', '勝つためなら、と口にする者が増えた'], g: ['帝国の陣に、いっそう冷たい風が吹いた', '兵の目が宝玉の光から離れなくなった', '黄昏の軍は勝つことだけを数えはじめた'] },
+    shadow: { s: ['軍に冷たい風が吹きはじめた', '暁の兵の目から、迷いが消えた。代わりに、何かが消えた', '勝つためなら、と口にする者が増えた'], g: ['帝国の陣に、いっそう冷たい風が吹いた', '兵の目が宝玉の光から離れなくなった', '黄昏の軍は勝つことだけを数えはじめた'] },
     harmony: { s: ['軍の中に、和を望む声が増えた', '暁の兵が敵の兵の名を尋ねるようになった', '戦の終わらせ方を話す者が増えた'], g: ['帝国の陣から、戦をやめたいという声が漏れ聞こえる', '帝国の兵が敵の旗を憎まなくなった', '黄昏の軍に、和を望む声が広がった'] }
   };
   // 先頭の道が入れ替わったときだけ新しい先頭を返す (それ以外は null)
