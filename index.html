@@ -21,6 +21,7 @@
 <link rel="apple-touch-icon" sizes="180x180" href="assets/site/apple-touch-icon.png">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<script src="assets/site/analytics.js" data-ga="G-V2WKDYZVDH"></script>
 <style>
 /* 63章 (規則4・R4): 文字は自前の PixelMplus12 (本文 12px) と PixelMplus10 (見出し・ラベル 10px) だけ。等倍でのみ使う。
    assets/fonts/ の woff2 は tools/fonts/build_pixelmplus.py で作った部分集合 (M+ FONT LICENSE: assets/fonts/LICENSE_E)。Google Fonts は読まない */
@@ -577,6 +578,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
 .rec-credit p { margin: 0 0 3px; color: var(--ink); }
 .rec-credit .rec-h { margin-top: 4px; }
 .rec-credit .rec-link { display: block; color: var(--gold-hi); text-decoration: none; white-space: nowrap; overflow: hidden; }
+#siteNote .rec-link { white-space: normal; }
 #screen.portrait .rec-credit { font-size: 12px; font-family: var(--font-ui); line-height: 15px; }
 #measure { position: absolute; left: -9999px; top: 0; visibility: hidden; white-space: pre-wrap; word-break: break-all; overflow-wrap: anywhere; font-size: 12px; font-family: var(--font-ui); line-height: 15px; }
 
@@ -802,6 +804,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
         <p>物語の筋立てや考え方の一部を、次の 2 作品から取り入れています。人物と地名は架空のものです。語り部の言葉の一部は『三国志』序からの翻案です。</p>
         <a class="rec-link" href="https://www.aozora.gr.jp/cards/000083/card1369.html" target="_blank" rel="noopener">菊池寛『四条畷の戦』(青空文庫)</a>
         <a class="rec-link" href="https://www.aozora.gr.jp/cards/001562/card52409.html" target="_blank" rel="noopener">吉川英治『三国志』序 (青空文庫)</a>
+        <div id="siteNote"><p>このサイトでは、アクセスの状況を知るために Google アナリティクスを使っています。Google アナリティクスは Cookie を使ってデータを集めます。データは Google のプライバシー ポリシーに従って管理されます。</p><a class="rec-link" href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Google のサービスを使用するサイトやアプリから収集した情報の Google による使用</a></div>
       </div>
       <div class="rec-page" id="recPageScroll" hidden>
         <ul class="rec-scroll" id="recScroll"></ul>
@@ -4999,7 +5002,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
       assignNicks(); replayTags();
       BV.flip = G.mode === 'cpu' && G.human === 1;
       G.field = nx.field;
-      G.started = true; UnitInfo.hide(); BV.layout(); renderBoard();
+      G.started = true; emitTactics('tactics:gamestart', { mode: G.mode, side: G.mode === 'cpu' ? G.human : null, field: G.field.id, resumed: true }); UnitInfo.hide(); BV.layout(); renderBoard();
       G.busy = true; refreshHud();
       Mood.reset(); BGM.play('even');
       // 戦況図と序章は飛ばし、短い語りと、そのときの時刻の情景 (盤の空・明るさ) から、その手番から (56章: 題札は出さない)
@@ -6565,6 +6568,10 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     return { promotions: pr, captures: ca };
   }
   var REASON = { checkmate: '詰み', nomoves: '指せる手なし', resign: '投了', sennichite: '千日手', perpetual: '連続王手の千日手', declaration: '入玉宣言', foul: '反則・二歩' };
+  // 公開サイトの計測へ知らせる合図。本体は計測の中身を知らない。例外が出ても対局は止めない
+  function emitTactics(name, detail) {
+    try { window.dispatchEvent(new CustomEvent(name, { detail: detail })); } catch (e) { /* noop */ }
+  }
   async function finishGame(res, tok) {
     if (tok == null) tok = G.token;
     // 待った・取り消しのあとに古い終局処理が来たら、何も変えずに抜ける (いまの局面が終局でなければ終局にしない)
@@ -6604,6 +6611,13 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
   // S3: 結末を確定する (記録 → 自動の記しを消す → 結末の画面)。結末の画面が出せなければ、最低限の結果の画面を出す
   async function concludeGame(res, en, stt, tok) {
     if (!live(tok)) return;
+    if (!res.gaSent) { // 終局の合図は 1 局に 1 回 (結果の値だけ。日誌・盤面・駒の名は入れない)
+      res.gaSent = true;
+      try {
+        var gres = G.mode === 'cpu' ? (res.winner == null ? 'draw' : (res.winner === G.human ? 'win' : 'lose')) : (res.winner == null ? 'draw' : (res.winner === 0 ? 'sente' : 'gote'));
+        emitTactics('tactics:gameend', { result: gres, reason: res.reason, ending: en && typeof en.no === 'number' ? en.no : null, plies: G.state ? G.state.ply : 0 });
+      } catch (e) { /* noop */ }
+    }
     if (en) {
       var saved = false;
       try { saveRecord(en); saveChronicle(en, res); saved = true; } catch (err) { trace('ERR', 'finish.record: ' + (err && err.message)); }
@@ -7195,6 +7209,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     G.field = (window.__fieldOverride && D.FIELDS.filter(function (f) { return f.id === window.__fieldOverride; })[0]) || D.pickField(S.field, Math.random);
     saveField(G.field.id);
     G.started = true;
+    emitTactics('tactics:gamestart', { mode: G.mode, side: G.mode === 'cpu' ? G.human : null, field: G.field.id });
     UnitInfo.hide();
     BV.layout();
     renderBoard();

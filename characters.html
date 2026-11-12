@@ -94,6 +94,8 @@ section { display: grid; gap: 8px; min-width: 0; }
 /* 実装レビューの直し (E8): ゲームへもどる (窓と同じ形のリンク)。高さ 37 論理 px (字の行 19 + 上下の余白 9) は、u の最小 (11/12) でも 32 CSS px 以上 */
 a.back { justify-self: start; color: var(--gold-hi); text-decoration: none; }
 a.back > .in { display: block; padding: 9px 12px; }
+#siteNote p { margin: 0 0 3px; }
+#siteNote .rec-link { display: block; color: var(--gold-hi); text-decoration: none; padding: 9px 0; }
 .grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
 .army { gap: 10px; }
 .army-head { box-shadow: inset 4px 0 0 var(--head-c, currentColor); padding-left: 12px; display: grid; gap: 4px; }
@@ -124,6 +126,7 @@ table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 30
 th, td { text-align: left; vertical-align: top; padding: 2px 4px 3px; box-shadow: inset 0 calc(-1 * var(--d1)) 0 var(--silver-lo); } /* 表の線は影 (再ゲート D) */
 th { color: var(--gold-hi); font-weight: normal; white-space: nowrap; font-family: var(--font-label); font-size: 10px; }
 </style>
+<script src="assets/site/analytics.js" data-ga="G-V2WKDYZVDH"></script>
 </head>
 <body>
 <div id="page"><main>
@@ -292,6 +295,7 @@ th { color: var(--gold-hi); font-weight: normal; white-space: nowrap; font-famil
       <div class="win card"><div class="in"><span class="label">語り部</span><h3>この戦記を書いた者</h3><p>名は残っていない。同じ戦を何度も語り直したので、どれが本当かは誰も知らない。</p></div></div>
     </div>
   </section>
+  <div id="siteNote"><p>このサイトでは、アクセスの状況を知るために Google アナリティクスを使っています。Google アナリティクスは Cookie を使ってデータを集めます。データは Google のプライバシー ポリシーに従って管理されます。</p><a class="rec-link" href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener">Google のサービスを使用するサイトやアプリから収集した情報の Google による使用</a></div>
   <a class="win back" id="backBottom" href="index.html"><span class="in">ゲームへもどる</span></a>
 </main></div>
 <script>
