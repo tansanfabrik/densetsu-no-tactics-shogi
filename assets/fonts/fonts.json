@@ -1,0 +1,58 @@
+{
+ "source": {
+  "release": "itouhiro/PixelMplus v1.0.0",
+  "fontVersion": "2013.0602",
+  "url": "https://github.com/itouhiro/PixelMplus/releases/download/v1.0.0/PixelMplus-20130602.zip",
+  "sha256": "ca4b5eecc9cf869e85d480000084ecc0fb24c16fc8b37b4046145ecd642fae11",
+  "licence": "M+ FONT LICENSE (LICENSE_E / LICENSE_J)"
+ },
+ "tool": "tools/fonts/build_pixelmplus.py (fonttools subset, woff2)",
+ "aliases": {
+  "U+2014": "U+2015",
+  "U+301C": "U+FF5E"
+ },
+ "textFiles": [
+  "index.html",
+  "dialogue.js",
+  "dialogue_more.js",
+  "engine.js",
+  "characters.html"
+ ],
+ "chars": 1660,
+ "faces": [
+  {
+   "file": "PixelMplus12-Regular.subset.woff2",
+   "from": "PixelMplus12-Regular.ttf",
+   "glyphs": 1660,
+   "bytes": 63164,
+   "sha256": "c482bd1364e3b2aaee11d43a309e8dc066aaf4572bbcf4848684bc1ea80b5775",
+   "missing": "",
+   "dotGridShiftUnits": -50,
+   "offGridY": 6,
+   "unitsPerEm": 1200,
+   "vertical": {
+    "ascent": 1101,
+    "descent": 200,
+    "lineGap": 0,
+    "tables": "hhea = OS/2 typo = OS/2 win, USE_TYPO_METRICS"
+   }
+  },
+  {
+   "file": "PixelMplus10-Regular.subset.woff2",
+   "from": "PixelMplus10-Regular.ttf",
+   "glyphs": 1660,
+   "bytes": 54540,
+   "sha256": "91ba40da1e8635f122a35ee2b44662d4c3a8fcaa4880fc09f36c18ae9835a8db",
+   "missing": "",
+   "dotGridShiftUnits": 0,
+   "offGridY": 6,
+   "unitsPerEm": 1200,
+   "vertical": {
+    "ascent": 1081,
+    "descent": 240,
+    "lineGap": 0,
+    "tables": "hhea = OS/2 typo = OS/2 win, USE_TYPO_METRICS"
+   }
+  }
+ ]
+}

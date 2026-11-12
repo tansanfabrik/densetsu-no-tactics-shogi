@@ -1,0 +1,434 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>登場人物と軍勢</title>
+<!-- 実装レビューの直し (E8): 公開サイトの説明・共有の画像・アイコン (index.html と同じ画像。tools/make_site_images.mjs) -->
+<meta name="description" content="伝説のタクティクス将棋に登場する、二つの軍勢と人々の紹介です。">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="伝説のタクティクス将棋">
+<meta property="og:title" content="登場人物と軍勢 (伝説のタクティクス将棋)">
+<meta property="og:description" content="伝説のタクティクス将棋に登場する、二つの軍勢と人々の紹介です。">
+<meta property="og:url" content="https://densetsu-no-tactics-shogi.tansanfabrik.com/characters.html">
+<meta property="og:image" content="https://densetsu-no-tactics-shogi.tansanfabrik.com/assets/site/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="伝説のタクティクス将棋のロゴと、宝玉の王冠、両軍の王の駒のドット絵">
+<meta property="og:locale" content="ja_JP">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="登場人物と軍勢 (伝説のタクティクス将棋)">
+<meta name="twitter:description" content="伝説のタクティクス将棋に登場する、二つの軍勢と人々の紹介です。">
+<meta name="twitter:image" content="https://densetsu-no-tactics-shogi.tansanfabrik.com/assets/site/og.png">
+<link rel="icon" type="image/png" sizes="48x48" href="assets/site/icon-48.png">
+<link rel="icon" type="image/png" sizes="96x96" href="assets/site/icon-96.png">
+<link rel="apple-touch-icon" sizes="180x180" href="assets/site/apple-touch-icon.png">
+<!-- 63章 E (R14): ゲームと同じ文字 (assets/fonts の PixelMplus)・窓・駒の絵 (assets/pixel)。外のサイトから何も読まない。使うファイルは assets/MANIFEST.json -->
+<script src="assets/pixel/kanji.js" onerror="this.remove()"></script>
+<style>
+@font-face { font-family: "PixelMplus12"; src: url("assets/fonts/PixelMplus12-Regular.subset.woff2") format("woff2"); font-display: block; ascent-override: 91.75%; descent-override: 16.6667%; line-gap-override: 0%; }
+@font-face { font-family: "PixelMplus10"; src: url("assets/fonts/PixelMplus10-Regular.subset.woff2") format("woff2"); font-display: block; ascent-override: 90.0833%; descent-override: 20%; line-gap-override: 0%; }
+/* 戦記の巻物: ゲーム画面の窓 (濃紺の4段・銀の縁・2ドットの段の角) をそのまま資料に使う。
+   文字は PixelMplus を等倍か整数倍だけ。絵はすべて assets/pixel のドット絵を整数倍で。
+   再ゲート 後半 (D の改め): 本文 (#page の中) は整数の論理 px (= ゲームの 1 ドット) で組み、#page に transform: scale(u) をかけて拡大する
+   (index.html の #screen と同じ作法)。u = M / dpr、M は 1 ドットの実画素の数 (整数)。下の script が決める。
+   以前は --k に端数の u を入れて組んでいたため、Chrome のレイアウトの 1/64 px の刻みで縦の位置が升目からずれた (dpr 1.25・2.625 で最大 0.42 ドット)。
+   script が動かないときは #page を 1 倍で置き、広い画面 (720px 以上) は zoom: 2 にする */
+:root {
+  --u: 1; /* 1 論理 px の CSS px (script が入れる)。body の左右の余白 (safe-area を含む) を測るためだけに使う */
+  --bg: #000000; --edge: #050608;
+  --win-1: #1f2b6b; --win-2: #1a2560; --win-3: #151f55; --win-4: #111a49; --win-hi: #46528e;
+  --silver: #c7cedc; --silver-lo: #5d667c; --white: #f7f7f2;
+  --gold-hi: #f3dc95; --gold: #c9a24a; --gold-lo: #6b4f1c;
+  --team-0: #5f9be6; --team-1: #e0584a;
+  /* 窓の段の角 (2ドット)・縁 (1ドット) */
+  --d1: 1px; --d2: 2px;
+  --notch: polygon(var(--d2) 0, calc(100% - var(--d2)) 0, calc(100% - var(--d2)) var(--d1), calc(100% - var(--d1)) var(--d1), calc(100% - var(--d1)) var(--d2), 100% var(--d2),
+    100% calc(100% - var(--d2)), calc(100% - var(--d1)) calc(100% - var(--d2)), calc(100% - var(--d1)) calc(100% - var(--d1)), calc(100% - var(--d2)) calc(100% - var(--d1)), calc(100% - var(--d2)) 100%,
+    var(--d2) 100%, var(--d2) calc(100% - var(--d1)), var(--d1) calc(100% - var(--d1)), var(--d1) calc(100% - var(--d2)), 0 calc(100% - var(--d2)),
+    0 var(--d2), var(--d1) var(--d2), var(--d1) var(--d1), var(--d2) var(--d1));
+  --font-ui: "PixelMplus12", monospace;
+  --font-label: "PixelMplus10", "PixelMplus12", monospace;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { background: var(--bg); }
+body {
+  margin: 0; background: var(--bg); color: var(--white);
+  font-family: var(--font-ui); font-size: 12px; line-height: 19px;
+  -webkit-font-smoothing: none; font-synthesis: none; letter-spacing: 0;
+  padding: 0 max(8px, env(safe-area-inset-right, 0px)) 0 max(8px, env(safe-area-inset-left, 0px));
+}
+#page { padding: 16px 0 32px; }
+main { max-width: 456px; margin: 0 auto; display: grid; gap: 24px; }
+@media (min-width: 720px) { html:not(.fit) #page { zoom: 2; } }
+/* script が動くとき: #page を文書の左上に置き、translate(本文の左端) scale(u) で拡大する。文書の高さは script が body に入れる (拡大後の高さ) */
+html.fit body { padding: 0 max(calc(8px * var(--u)), env(safe-area-inset-right, 0px)) 0 max(calc(8px * var(--u)), env(safe-area-inset-left, 0px)); }
+html.fit #page { position: absolute; left: 0; top: 0; transform-origin: 0 0; }
+html.fit main { max-width: none; margin: 0; }
+h1, h2, h3 { margin: 0; font-weight: normal; }
+/* 見出し: 金の字に 1ドットの暗い縁 (ぼかしなし) */
+h1, h2 { color: var(--gold-hi); text-shadow: 1px 0 0 var(--edge), -1px 0 0 var(--edge), 0 1px 0 var(--edge), 0 -1px 0 var(--edge); }
+h1 { font-size: 24px; line-height: 27px; }
+h1 small { display: block; font-size: 12px; line-height: 19px; color: var(--silver); text-shadow: none; }
+h2 { font-size: 24px; line-height: 27px; padding-bottom: 4px; box-shadow: inset 0 calc(-1 * var(--d1)) 0 var(--gold-lo); } /* 再ゲート (D-2): 下線は影 */
+h3 { font-size: 12px; line-height: 19px; color: var(--gold-hi); }
+p { margin: 0; }
+section { display: grid; gap: 8px; min-width: 0; }
+.lede { color: var(--silver); }
+.label { font-family: var(--font-label); font-size: 10px; line-height: 11px; color: var(--silver); }
+/* SNES の窓: 外の暗い縁・銀の縁・内側の明かり・段の角・濃紺の平らな4段 */
+/* 実装レビューの直し (P0-2): 外の暗い縁は index.html の .nwin と同じ作り。窓と同じ箱を上下左右に 1 ドット広げた層 (::before) を --notch の形で暗い色に塗り、
+   中身 (.in) の後ろに置く (以前の 4 つの drop-shadow と同じ画素。filter は WebKit で拡大後の中身をにじませうるのでやめた) */
+.win { position: relative; isolation: isolate; min-width: 0; }
+.win::before { content: ""; position: absolute; left: calc(-1 * var(--d1)); top: calc(-1 * var(--d1)); right: calc(-1 * var(--d1)); bottom: calc(-1 * var(--d1)); z-index: -1; background: var(--edge); clip-path: var(--notch); pointer-events: none; }
+.win > .in {
+  clip-path: var(--notch); height: 100%;
+  --bh: 25%; /* 4段の幅は下の script が整数ドットで入れる */
+  background: linear-gradient(var(--win-1), var(--win-1)) 0 0 / 100% var(--bh) no-repeat padding-box, linear-gradient(var(--win-2), var(--win-2)) 0 var(--bh) / 100% var(--bh) no-repeat padding-box, linear-gradient(var(--win-3), var(--win-3)) 0 calc(var(--bh) * 2) / 100% var(--bh) no-repeat padding-box, var(--win-4) padding-box; /* 実装レビューの直し (W5): 1 色の層を重ねる (index.html の .nwin > .in と同じ。WebKit の段のディザを避ける) */
+  /* 再ゲート (D): 銀の縁と内側の明かりは border でなく内側の影。余白に縁の 1 ドットを足す */
+  border: 0; box-shadow: inset 0 0 0 var(--d1) var(--silver), inset 0 0 0 var(--d2) var(--win-hi);
+  padding: 7px 9px;
+  display: grid; gap: 4px; min-width: 0;
+}
+/* 実装レビューの直し (E8): ゲームへもどる (窓と同じ形のリンク)。高さ 37 論理 px (字の行 19 + 上下の余白 9) は、u の最小 (11/12) でも 32 CSS px 以上 */
+a.back { justify-self: start; color: var(--gold-hi); text-decoration: none; }
+a.back > .in { display: block; padding: 9px 12px; }
+.grid3 { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 6px; }
+.army { gap: 10px; }
+.army-head { box-shadow: inset 4px 0 0 var(--head-c, currentColor); padding-left: 12px; display: grid; gap: 4px; }
+.army-head.blue { --head-c: var(--team-0); } .army-head.red { --head-c: var(--team-1); }
+.army-head.blue h2 { color: var(--team-0); } .army-head.red h2 { color: var(--team-1); }
+.masthead .in { gap: 8px; }
+.masthead .kings { display: flex; justify-content: center; gap: 16px; }
+.masthead h1 { text-align: center; } .masthead .lede { color: var(--white); }
+.hero .in { grid-template-columns: auto 1fr; gap: 8px; align-items: start; }
+.hero .in > div { min-width: 0; display: grid; gap: 4px; }
+.portrait { display: grid; gap: 4px; justify-items: center; }
+/* 絵は整数倍だけ: 宝玉の絵 96×96、駒 42×46 (1 倍・2 倍。#page の拡大でさらに M 実画素) */
+.portrait img { display: block; width: 98px; height: 98px; image-rendering: pixelated; padding: var(--d1); box-shadow: inset 0 0 0 var(--d1) var(--gold); } /* border-box: 枠込み 98 = 絵 96 + 枠 (枠は余白に描く影。再ゲート D) */
+canvas.koma { display: block; width: 42px; height: 46px; image-rendering: pixelated; }
+canvas.koma.big { width: 84px; height: 92px; }
+/* 本文の幅が 202 論理 px 未満 (例: 幅 320・dpr 1.25 で L=184) のときは、題の2枚の王を 1 倍にする (2 倍だと窓の幅を超えて横にはみ出す) */
+html.slim .masthead canvas.koma.big { width: 42px; height: 46px; }
+@media (max-width: 359px) { .hero .in { grid-template-columns: 1fr; } }
+.houses { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 6px; }
+.house .in { grid-template-columns: 48px 1fr; gap: 6px; align-items: start; }
+.house .in > div { min-width: 0; display: grid; gap: 2px; }
+.house canvas.crest { display: block; width: 48px; height: 48px; image-rendering: pixelated; }
+.house .in > canvas.koma { justify-self: center; }
+/* 表: 1ドットの線、見出しは金 */
+.tbl { overflow-x: auto; }
+table { border-collapse: separate; border-spacing: 0; width: 100%; min-width: 300px; } /* 再ゲート (D-6): 表の線をセルの中に置く (collapse は線を上下のセルに半分ずつ分けて半ドットになる) */
+.card > .in { align-content: start; } /* 再ゲート (D): 行の高さをそろえた余りを中の行に配らない (配ると縦の位置が端数になる) */
+th, td { text-align: left; vertical-align: top; padding: 2px 4px 3px; box-shadow: inset 0 calc(-1 * var(--d1)) 0 var(--silver-lo); } /* 表の線は影 (再ゲート D) */
+th { color: var(--gold-hi); font-weight: normal; white-space: nowrap; font-family: var(--font-label); font-size: 10px; }
+</style>
+</head>
+<body>
+<div id="page"><main>
+  <a class="win back" id="backTop" href="index.html"><span class="in">ゲームへもどる</span></a>
+  <!-- 再レビュー修正 (P0-3): 公開版 (claude.ai Artifact でこのファイル単体) では行き先がないため、物語の流れ・物語の文章への案内リンクは置かない -->
+  <!-- 実装レビューの直し (E8): 公開サイト (index.html と同じフォルダ) では、ゲーム (index.html) へもどるリンクを上と下に置く -->
+  <!-- 63章 レビュー修正 (K8): 最初の画面から SNES の窓と駒の絵が見えるように、題と前書きを窓に入れ、両軍の王の駒を並べる -->
+  <header class="win masthead"><div class="in">
+    <div class="kings" aria-hidden="true"><canvas class="koma big" data-ch="王" data-side="0" width="42" height="46"></canvas><canvas class="koma big" data-ch="玉" data-side="1" width="42" height="46"></canvas></div>
+    <h1><small>伝説のタクティクス将棋</small>登場人物と軍勢</h1>
+    <p class="lede">九路の大陸で戦う二つの軍勢と、その中の人々の紹介です。駒の二つ名(「渡し船の新兵」など)は対局ごとに配られるので、ここでは家と立場、駒ごとの気質を紹介します。</p>
+  </div></header>
+
+  <section>
+    <h2>三十二年前、暁の中興</h2>
+    <div class="win"><div class="in">
+      <p>すべては、勝った日から始まった。三十二年前、先々代の暁王と若き日のヴァルドラは肩を並べ、大陸を苦しめた旧帝を倒した。人々はこれを「暁の中興」と呼んだ。</p>
+      <p>だが勝利は、勝った者たちを分けた。宮廷の貴族たちは恩賞を自分たちで分け合い、血を流した兵たちには空約束だけが残った。不満を抱えた兵たちが担ぎ上げたのが、ヴァルドラだった。彼は宮廷を追い、始まりの王の冠から「一点の宝玉」を奪って、自らを玉将と名乗った。黄昏の帝国の始まりである。</p>
+      <p>帝国は南を平らげ、北へ迫った。先代の暁王は湊の戦いで討たれ、息子に遺訓を残した。「私が倒れれば、世は黄昏のものになる。それでも、義を失うな」。</p>
+    </div></div>
+  </section>
+
+  <section>
+    <h2>名家 ― 北と南に分かれた車家と馬家</h2>
+    <div class="win"><div class="in">
+      <p>名家を率いるのは飛車と角行だけです。家の名は駒の字から取ります。飛車と香車は「車」の字を持つので車家、角行は成ると龍馬になり、桂馬と「馬」の字を分け合うので馬家です。当主は飛車と角行、家臣は香車と桂馬。金将・銀将・歩兵は家を持ちません。</p>
+      <p>車家と馬家は、三十二年前の中興のあと北と南に分かれました。いまは同じ家の者が両軍に分かれて戦っています。</p>
+    </div></div>
+  </section>
+
+  <section class="army">
+    <div class="army-head blue">
+      <span class="label">先手</span>
+      <h2>暁の解放軍</h2>
+      <p>北の最後の砦に残った、王と二十の兵。千日の包囲に耐え、夜明けの鐘とともに最後の戦いに出る。捕虜を仲間として迎えるのが流儀で、軍の半分がかつての敵兵になる日も来るかもしれない。</p>
+    </div>
+
+    <div class="win hero"><div class="in">
+      <div class="portrait"><canvas class="koma big" data-ch="王" data-side="0" width="42" height="46" aria-hidden="true"></canvas><img src="assets/pixel/crown_empty_96.png" alt="宝玉の台座が空になった王冠が、北の砦の石壁の前に置かれている" width="96" height="96"></div>
+      <div>
+        <span class="label">王将 ・ 総大将</span>
+        <h3>暁王レオニス</h3>
+        <p>北の辺境で育った若き王。民の前で剣を抜いたことはない。幼いころは遊びの中でも帝国の兵を追う真似ばかりして、父の遺訓を胸に育った。掲げる「王」の字に点はない。「点ひとつで民の上に立てるものか」。その優しさを、古い家の者たちは頼もしくも危うくも見ている。</p>
+      </div>
+    </div></div>
+
+    <div class="houses">
+      <article class="win house"><div class="in">
+        <canvas class="crest" data-crest="kuruma_n" width="12" height="12" aria-hidden="true"></canvas>
+        <div>
+          <span class="label">北の車家 ・ 紋章 雲を割って走る戦車の車輪</span>
+          <h3>「まっすぐ、果てまで」</h3>
+          <p>飛車が当主、香車が家臣を務める。鍛冶と兵の家で、武勲で成り上がった。貴族を嫌い、南に分かれた同族の不満にも理解がある。</p>
+        </div>
+      </div></article>
+      <article class="win house"><div class="in">
+        <canvas class="crest" data-crest="uma_n" width="12" height="12" aria-hidden="true"></canvas>
+        <div>
+          <span class="label">北の馬家 ・ 紋章 翼のある馬</span>
+          <h3>「斜めにも道はある」</h3>
+          <p>角行が当主、桂馬が家臣を務める。川沿いの商いの家で、中興のとき宮廷に恩賞を奪われた側だった。南の馬家との縁はまだ切れておらず、寝返りの噂が絶えない。</p>
+        </div>
+      </div></article>
+      <article class="win house plain"><div class="in">
+        <canvas class="koma" data-ch="金" data-side="0" width="42" height="46" aria-hidden="true"></canvas>
+        <div>
+          <span class="label">家を持たない ・ 金将</span>
+          <h3>北辺の古参の近衛</h3>
+          <p>先代の暁王に最後まで従った近衛。王家への忠義は誰より厚いが、若き王の甘さを危ぶんでいる。北の馬家の者を信用していない。</p>
+        </div>
+      </div></article>
+      <article class="win house plain"><div class="in">
+        <canvas class="koma" data-ch="銀" data-side="0" width="42" height="46" aria-hidden="true"></canvas>
+        <div>
+          <span class="label">家を持たない ・ 銀将</span>
+          <h3>流れ者の忍び</h3>
+          <p>かつて帝国に仕えていた老兵。宝玉が来る前の帝国を知っている。解放軍でただ一人、黄昏帝の昔の顔を語ることができる。</p>
+        </div>
+      </div></article>
+      <article class="win house plain"><div class="in">
+        <canvas class="koma" data-ch="歩" data-side="0" width="42" height="46" aria-hidden="true"></canvas>
+        <div>
+          <span class="label">家なき者たち ・ 歩兵</span>
+          <h3>村々の新兵</h3>
+          <p>渡し船、粉挽き小屋、峠の茶屋。出自は村や暮らしの場所で呼ばれる。数は多く、すぐ揺らぐが、最初に敵陣へ入って昇格した一人は「と金の英雄」小吉として語り継がれる。</p>
+        </div>
+      </div></article>
+    </div>
+  </section>
+
+  <section class="army">
+    <div class="army-head red">
+      <span class="label">後手</span>
+      <h2>黄昏の帝国</h2>
+      <p>三十年で大陸の南半分を平らげた帝国。宝玉の光が兵の心を縛り、帝国の兵は一度も主を裏切ったことがない。ただ、その光の下で何を見ているのかは、兵たち自身にもわからない。</p>
+    </div>
+
+    <div class="win hero"><div class="in">
+      <div class="portrait"><canvas class="koma big" data-ch="玉" data-side="1" width="42" height="46" aria-hidden="true"></canvas><img src="assets/pixel/jewel_hand_96.png" alt="黒い籠手の手のひらで、宝玉が黄昏色に光っている" width="96" height="96"></div>
+      <div>
+        <span class="label">玉将 ・ 皇帝</span>
+        <h3>黄昏帝ヴァルドラ</h3>
+        <p>かつては飢えから民を救った名君だった。報われない兵たちの声に担がれて玉座に着き、宝玉を手にしてから人が変わった。今は夜ごと宝玉を見つめて黙っている。勝つたびに、勝利が重くなる。「余は、正しかったのか」。</p>
+      </div>
+    </div></div>
+
+    <div class="houses">
+      <article class="win house"><div class="in">
+        <canvas class="crest" data-crest="kuruma_s" width="12" height="12" aria-hidden="true"></canvas>
+        <div>
+          <span class="label">南の車家 ・ 紋章 冠を戴く車輪</span>
+          <h3>「触れれば轢く」</h3>
+          <p>飛車が当主、香車が家臣を務める。帝の武勇を支えた武門で、帝への忠誠は本物だが、その苛烈さは民に恐れられている。北の車家を裏切り者と呼ぶ。</p>
+        </div>
+      </div></article>
+      <article class="win house"><div class="in">
+        <canvas class="crest" data-crest="uma_s" width="12" height="12" aria-hidden="true"></canvas>
+        <div>
+          <span class="label">南の馬家 ・ 紋章 天秤を背負う馬</span>
+          <h3>「すべては釣り合う」</h3>
+          <p>角行が当主、桂馬が家臣を務める。帝国の宰相家で、帝が宝玉に呑まれていくのを冷ややかに見つめ、宝玉を狙っている。帝国が勝っても、この家の動きは止まらない。</p>
+        </div>
+      </div></article>
+      <article class="win house plain"><div class="in">
+        <canvas class="koma" data-ch="金" data-side="1" width="42" height="46" aria-hidden="true"></canvas>
+        <div>
+          <span class="label">家を持たない ・ 金将</span>
+          <h3>帝の昔を知る老いた近衛</h3>
+          <p>三十二年前は中興の側で戦った。宝玉が来る前の帝を知る最後の者で、帝がいつかその顔に戻ってくれると信じている。</p>
+        </div>
+      </div></article>
+      <article class="win house plain"><div class="in">
+        <canvas class="koma" data-ch="歩" data-side="1" width="42" height="46" aria-hidden="true"></canvas>
+        <div>
+          <span class="label">家なき者たち ・ 歩兵</span>
+          <h3>兵舎の兵</h3>
+          <p>第三兵舎、宮廷厨房、関所番。出自は兵舎や持ち場で呼ばれる。宝玉の光だけを見ていろと教えられているが、帝国の外に家族を残してきた者も多い。最初に昇格した一人は与作と呼ばれる。</p>
+        </div>
+      </div></article>
+    </div>
+  </section>
+
+  <section>
+    <h2>駒ごとの気質</h2>
+    <p>同じ種類の駒は、軍が違っても気質が似ています。台詞はこの気質と、その駒の家や出自に沿って変わります。</p>
+    <div class="win"><div class="in tbl"><table>
+      <thead><tr><th>駒</th><th>兵種</th><th>気質</th><th>昇格すると</th></tr></thead>
+      <tbody>
+        <tr><td>王将・玉将</td><td>暁王・黄昏帝</td><td>軍の主。重々しく、言葉が少ない</td><td>昇格しない</td></tr>
+        <tr><td>飛車</td><td>猛将</td><td>豪快な武人。縦にも横にも、自分の庭だと言い張る</td><td>龍王</td></tr>
+        <tr><td>角行</td><td>術師</td><td>皮肉屋。斜めの理屈で物を言い、説得されても屁理屈で粘る</td><td>天馬術師(龍馬)</td></tr>
+        <tr><td>金将</td><td>近衛</td><td>忠義一筋。王のそばを離れたがらず、囲いを進言する</td><td>昇格しない</td></tr>
+        <tr><td>銀将</td><td>忍び</td><td>老練。斜め後ろへの退き際を誇る</td><td>上忍</td></tr>
+        <tr><td>桂馬</td><td>騎兵</td><td>軽口で跳ねる。後ろに戻れないのを嘆く</td><td>重騎兵</td></tr>
+        <tr><td>香車</td><td>槍兵</td><td>一直線。前しか見ず、説得には即答で断る</td><td>重槍兵</td></tr>
+        <tr><td>歩兵</td><td>新兵</td><td>若く、数が多い。揺らぎやすいが、昇格すると調子に乗る</td><td>古参兵(と金)</td></tr>
+      </tbody>
+    </table></div></div>
+  </section>
+
+  <section>
+    <h2>物語に名前だけ現れる人々</h2>
+    <div class="grid3">
+      <div class="win card"><div class="in"><span class="label">故人</span><h3>先々代の暁王</h3><p>若きヴァルドラとともに旧帝を倒し、暁の中興を成した。恩賞を独り占めした宮廷を抑えきれなかった。</p></div></div>
+      <div class="win card"><div class="in"><span class="label">故人</span><h3>先代の暁王</h3><p>レオニスの父。湊の戦いで討たれた。「それでも、義を失うな」。</p></div></div>
+      <div class="win card"><div class="in"><span class="label">語り部</span><h3>この戦記を書いた者</h3><p>名は残っていない。「この戦記は正史ではない」と断り、少しの嘘を書き足した。</p></div></div>
+    </div>
+  </section>
+  <a class="win back" id="backBottom" href="index.html"><span class="in">ゲームへもどる</span></a>
+</main></div>
+<script>
+// 63章 E (R14): 駒の絵 = assets/pixel/koma_portrait_{light,dark}.png (42×46) + kanji.js の字 (12px の各ドットを2倍)。
+// 紋章 = ゲームと同じ 12×12 のドット絵 (index.html buildCrests と同じ並び。pixel.check が突き合わせる)。
+// 画素は読まず (file:// でも動く)、絵の上に1ドットずつ塗る。色は palette.json の焼き込んだ色
+(function () {
+  'use strict';
+  var COL = { ink: '#140b04', hiL: '#eccc96', hiD: '#d1ad83', team0: '#558fd8', team1: '#c64d3f', g: '#d6ba73', d: '#6a5223', k: '#0e0d09' };
+  var KANJI = { x: 8, y: 14, w: 24, h: 24 }, BAND = [[39, 3, 34], [40, 3, 34]];
+  var CRESTS = {
+    kuruma_n: ['.dd......dd.', 'dddd....dddd', '....gggg....', '...g.gg.g...', '..g..gg..g..', '..gggggggg..', '..g..gg..g..', '...g.gg.g...', '....gggg....', '.dd......dd.', 'dddd....dddd', '............'],
+    uma_n: ['dd..........', 'ddd...gg....', '.ddd.gggg...', '..ddgggggg..', '...dgg.ggg..', '....gg..gg..', '....gg...g..', '....ggg.....', '...gggg.....', '..gggggg....', '............', '............'],
+    kuruma_s: ['..g..g..g...', '..gg.gg.gg..', '..gggggggg..', '....gggg....', '...g.gg.g...', '..g..gg..g..', '..gggggggg..', '..g..gg..g..', '...g.gg.g...', '....gggg....', '............', '............'],
+    uma_s: ['.....g......', '.ggggggggg..', '.g...g...g..', 'ddd..g..ddd.', '.....g......', '....ggg.....', '...ggggg....', '..gg.gggg...', '.....gg.g...', '.....gg.....', '....gggg....', '............']
+  };
+  function dot(x, c, X, Y) { x.fillStyle = c; x.fillRect(X, Y, 1, 1); }
+  // 再ゲート (D, S7・Sol 10・Sol 11): 倍率は実画素から決める。1 論理ドット = M 実画素 (整数) = u CSS px。本文 12px が 11 CSS px 以上 (広い画面は 22 以上) になる最小の M。
+  // 格子の原点は文書の左上。本文の左端と幅を M 実画素の倍数にする (safe-area を含めた左右の余白を格子に切り上げる)。列幅も論理ドットの整数。
+  // 再ゲート 後半: 本文は整数の論理 px で組み、#page に translate(本文の左端) scale(u) をかけて拡大する (index.html の fitScreen と同じ作法)。
+  // レイアウトの中の位置はすべて整数の論理 px なので、拡大後の位置は M 実画素の倍数になる (u の端数をレイアウトに持ち込まない)
+  var root = document.documentElement, page = document.getElementById('page'), main = document.querySelector('main'), U = 1, mq = null, sig = '';
+  function cols(el, min, L) {
+    if (!el) return;
+    var n = Math.max(1, Math.floor((L + 6) / (min + 6))), cw = Math.floor((L - 6 * (n - 1)) / n), rem = L - (n * cw + 6 * (n - 1)), a = [];
+    for (var i = 0; i < n; i++) a.push((i === n - 1 ? cw + rem : cw) + 'px');
+    var v = a.join(' '); if (el.style.gridTemplateColumns !== v) el.style.gridTemplateColumns = v;
+  }
+  // 再ゲート (D-6): 表の列幅を論理ドットの整数にする。自然な列幅を測って切り捨て、余りは最も広い列へ。table-layout: fixed と <colgroup> で入れる
+  // (#page の中は論理 px なので、測った幅は拡大前の値 = offsetWidth の系で読む。getBoundingClientRect は拡大後なので u で割る)
+  function tableCols(t) {
+    var cg = t.querySelector('colgroup'); if (cg) cg.remove();
+    t.style.tableLayout = ''; t.style.width = '';
+    var row = t.rows[0]; if (!row) return;
+    var u = U || 1, ws = Array.prototype.map.call(row.cells, function (c) { return c.getBoundingClientRect().width / u; });
+    var total = Math.round(t.getBoundingClientRect().width / u), fl = ws.map(function (w) { return Math.floor(w + 1e-3); });
+    var rest = total - fl.reduce(function (a, b) { return a + b; }, 0), wi = 0;
+    for (var i = 1; i < ws.length; i++) if (ws[i] > ws[wi]) wi = i;
+    fl[wi] += rest;
+    cg = document.createElement('colgroup');
+    fl.forEach(function (w) { var c = document.createElement('col'); c.style.width = w + 'px'; cg.appendChild(c); });
+    t.insertBefore(cg, t.firstChild);
+    t.style.width = total + 'px'; t.style.tableLayout = 'fixed';
+  }
+  // 文書の高さ = #page の拡大後の高さ (#page は位置を固定しているので、文書の高さに入らない)。縦のスクロールはこの高さで働く
+  function height() {
+    if (!page || !root.classList.contains('fit')) return;
+    var h = page.offsetHeight * U, v = h + 'px';
+    if (document.body.style.height !== v) document.body.style.height = v;
+  }
+  function fit() {
+    if (!page || !main) return;
+    var dpr = window.devicePixelRatio || 1, T = window.innerWidth >= 720 ? 2 : 1;
+    var M = Math.max(1, Math.ceil(T * dpr * 11 / 12 - 1e-6)), u = M / dpr;      // 1 論理 px = M 実画素 = u CSS px
+    U = u; root.classList.add('fit'); root.style.setProperty('--u', String(u)); root.dataset.m = M; root.dataset.u = u;
+    // 左右の余白 (8 論理 px か safe-area の大きい方) を body の計算値で読む (--u を入れたあとで読む)。縦のスクロールバーが出て幅が変わったら測り直す (2 回まで)
+    for (var pass = 0; pass < 2; pass++) {
+      var cs = getComputedStyle(document.body), padL = parseFloat(cs.paddingLeft) || 0, padR = parseFloat(cs.paddingRight) || 0;
+      var cw = root.clientWidth;
+      var plL = Math.ceil(padL * dpr / M - 1e-3), plR = Math.ceil(padR * dpr / M - 1e-3);    // 余白を格子に切り上げた論理 px (読み値の丸めの誤差は 1/1000 まで許す)
+      var avail = Math.floor(cw * dpr / M + 1e-3) - plL - plR;
+      var L = Math.max(2, Math.min(456, avail)); L -= L & 1;                                // 偶数にする (中央寄せが半論理 px にならない)
+      var off = plL + Math.max(0, (avail - L) >> 1);                                        // 本文の左端 (論理 px)
+      root.dataset.l = L; root.dataset.off = off;
+      root.classList.toggle('slim', L < 202);   // 題の王 2 枚 (84 + 16 + 84) と窓の余白 18 が入らない幅
+      var key = [M, dpr, L, off, document.fonts && document.fonts.status].join('|');
+      if (key !== sig) {
+        sig = key;
+        page.style.width = L + 'px';
+        // 左端 off × M 実画素 (整数)。translate の値は CSS px なので off × u
+        page.style.transform = 'translate(' + (off * u) + 'px, 0px) scale(' + u + ')';
+        Array.prototype.forEach.call(document.querySelectorAll('.grid3'), function (el) { cols(el, 140, L); });
+        Array.prototype.forEach.call(document.querySelectorAll('.houses'), function (el) { cols(el, 200, L); });
+        Array.prototype.forEach.call(document.querySelectorAll('main table'), tableCols);
+      }
+      bands(); height();
+      if (root.clientWidth === cw) break;
+    }
+    // dpr が変わったら測り直す (窓を別の画面へ動かしたとき・拡大率を変えたとき)
+    if (window.matchMedia) {
+      try { if (mq) mq.removeEventListener('change', fit); mq = window.matchMedia('(resolution: ' + dpr + 'dppx)'); mq.addEventListener('change', fit); } catch (e) { mq = null; }
+    }
+  }
+  // 窓の濃紺の4段: 内側の高さ (論理 px) の 1/4 を切り捨て (段の境目が整数ドット)
+  function bands() {
+    Array.prototype.forEach.call(document.querySelectorAll('.win > .in'), function (el) { var bh = Math.max(1, Math.floor(el.clientHeight / 4)) + 'px'; if (el.style.getPropertyValue('--bh') !== bh) el.style.setProperty('--bh', bh); });
+  }
+  // 実装レビューの直し (T6): スクロールが止まったら (最後の scroll から 160ms、指が離れている)、文書の上端が端末の画素の整数になる位置へそろえる。
+  // 刻み q = q × dpr が整数になる最小の整数の CSS px (dpr 1.25 で 4、1.5 で 2、2.625 で 8、整数の dpr で 1)。いちばん近い q の倍数へ (動かすのは q/2 以下)
+  var snapT = 0, touching = false;
+  function quantum() { var d = window.devicePixelRatio || 1; for (var q = 1; q <= 64; q++) if (Math.abs(q * d - Math.round(q * d)) < 1e-6) return q; return 1; }
+  function snapScroll() {
+    if (touching) return;
+    var d = window.devicePixelRatio || 1, y = window.scrollY;
+    if (Math.abs(y * d - Math.round(y * d)) < 1e-3) return;
+    var q = quantum(), t = Math.round(y / q) * q, max = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    if (t > max) t -= q; if (t < 0) t = 0;
+    window.scrollTo(window.scrollX, t);
+  }
+  function snapLater() { clearTimeout(snapT); snapT = setTimeout(snapScroll, 160); }
+  window.addEventListener('scroll', snapLater, { passive: true });
+  window.addEventListener('touchstart', function () { touching = true; }, { passive: true });
+  ['touchend', 'touchcancel'].forEach(function (n) { window.addEventListener(n, function (e) { touching = !!(e.touches && e.touches.length); snapLater(); }, { passive: true }); });
+  fit(); window.addEventListener('resize', function () { fit(); snapLater(); });
+  if (document.fonts && document.fonts.ready) document.fonts.ready.then(fit);   // 字が読めたら表の列幅と高さを測り直す
+  // 中身の高さが変わったとき (字・絵の読み込み) は文書の高さと4段を直す。幅が変わったとき (スクロールバーの出入り) は組み直す
+  if (window.ResizeObserver) {
+    try { new ResizeObserver(function () { bands(); height(); }).observe(page); new ResizeObserver(function () { fit(); }).observe(root); } catch (e) { /* noop */ }
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('canvas.crest'), function (cv) {
+    var rows = CRESTS[cv.getAttribute('data-crest')], x = cv.getContext('2d');
+    if (!rows) return;
+    rows.forEach(function (r, j) { for (var i = 0; i < r.length; i++) if (COL[r[i]]) dot(x, COL[r[i]], i, j); });
+  });
+  var imgs = {};
+  function sprite(kind, done) {
+    if (imgs[kind]) { if (imgs[kind].complete) done(imgs[kind]); else imgs[kind].addEventListener('load', function () { done(imgs[kind]); }); return; }
+    var im = new Image(); imgs[kind] = im;
+    im.onload = function () { done(im); };
+    im.src = 'assets/pixel/koma_portrait_' + kind + '.png';
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('canvas.koma'), function (cv) {
+    var side = cv.getAttribute('data-side') === '1' ? 1 : 0, ch = cv.getAttribute('data-ch');
+    sprite(side ? 'dark' : 'light', function (im) {
+      var x = cv.getContext('2d');
+      x.imageSmoothingEnabled = false;
+      x.clearRect(0, 0, 42, 46); x.drawImage(im, 0, 0);
+      BAND.forEach(function (b) { x.fillStyle = side ? COL.team1 : COL.team0; x.fillRect(b[1], b[0], b[2] - b[1] + 1, 1); });
+      var K = window.PIXEL_KANJI, e = K && K.sizes && K.sizes['12'] && K.sizes['12'][ch];
+      if (!e) return;
+      var w = e[0] * 2, h = e[1] * 2, gx = KANJI.x + ((KANJI.w - w) >> 1), gy = KANJI.y + ((KANJI.h - h) >> 1), rows = e[4];
+      [[1, side ? COL.hiD : COL.hiL], [0, COL.ink]].forEach(function (pass) {
+        for (var j = 0; j < h; j++) for (var i = 0; i < w; i++) if (rows[j >> 1].charAt(i >> 1) === '#') dot(x, pass[1], gx + i + pass[0], gy + j + pass[0]);
+      });
+    });
+  });
+})();
+</script>
+</body>
+</html>
