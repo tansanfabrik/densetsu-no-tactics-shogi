@@ -386,6 +386,12 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
 .sysbox.appear { }
 .sysbox h3 { margin: 0 0 3px; font-weight: normal; font-size: 12px; font-family: var(--font-ui); color: var(--gold-hi); }
 .sysbox p { margin: 0; font-size: 12px; font-family: var(--font-ui); line-height: 15px; white-space: pre-wrap; }
+/* 囲いの形の小窓 (囲いの助言で囲いを選んだあと)。.kwin の窓に、自陣の下3段×9筋の盤図 (canvas を1倍で置く。拡大は画面の整数倍だけ) と説明文 */
+.ch-catch { position: absolute; inset: 0; cursor: pointer; } /* 窓の外を押しても閉じる (透明) */
+.castle-help { cursor: pointer; }
+.castle-help > .in { padding: 4px 6px 5px; }
+.castle-help h3 { color: var(--khaki-name); }
+.castle-help canvas.ch-board { display: block; margin: 0 auto 4px; image-rendering: pixelated; }
 .announce { width: auto; }
 .announce .in { padding: 4px 12px; }
 .sys-choices { list-style: none; padding: 0; margin: 3px 0 0; }
@@ -1946,6 +1952,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     // 再ゲート (C-1, S4): 表示中の吹き出しは、ページを測り直してから置き直す (remeasure は最後に place を呼ぶ)
     if (typeof Talk !== 'undefined' && Talk.cur) { if (Talk.cur._pages) Talk.remeasure(); else if (Talk.cur._opts) Talk.place(Talk.cur, Talk.cur._opts); }
     if (typeof Mini !== 'undefined') Mini.clear();
+    if (typeof Amb !== 'undefined' && Amb) Amb.sync(); // 外した吹き出しが順番待ちのものなら、先頭へ戻して新しい配置で出し直す (showing を残さない)
     if (typeof Relayout !== 'undefined') Relayout.run();
   }
   // 63章 (規則7・R7): 窓が開く動き。clip-path で中央から高さを整数ドットずつ広げる (約70ms × 3コマ)。見た目だけ:
@@ -3607,10 +3614,26 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     if (!hs) return null;
     return { x: hs.x, y: FIELD_TOP + hs.y - 12, foot: FIELD_TOP + hs.y + 12 };
   };
-  BV.resetFx = function () {
+  // 演出の後始末。all が偽 (1手の確定 commit・手番の終わり) と真 (取り消し・対局の始め) で、外すものが違う
+  //   all が偽: 「LEVEL UP!」(.lvup) は外さない (levelUpFx が決めた長さのあとで自分で消える)。
+  //     止めない文章の順番待ち (Amb) が出している吹き出し (Mini.el) も外さない (押す・自分の次の手で消える。53章)。ただし話す駒がその升にいなくなったら、
+  //     順番待ちの先頭へ戻して置き直す (Amb.sync)。順番待ちの外のひとこと (maybeHitokoto) は、これまでどおり外す (Mini.el も空にする)
+  //   all が真: すべて外し、順番待ちも空にする (Amb.clear)
+  //   どちらも最後に Amb.sync で、Amb.showing・Mini.el と画面の吹き出しの有無を合わせる (要素だけ外して状態が残ると、続きの文章が出なくなる)。
+  //   HP の帯を外したら、それを指す G._hpV も空にする
+  BV.resetFx = function (all) {
+    var M = Mini.el, cur = Amb.showing ? Amb.cur : null, keep = null, tk = -1;
+    if (!all && M && M.isConnected && cur && cur.line) {
+      tk = M._talker != null ? M._talker : -1;
+      if (tk < 0 || cur.id == null || cur.id < 0 || idAt(tk) === cur.id) keep = M;
+    }
     this.actors = []; this.hidden = {}; this.bounce = -1; this.talkers = {}; this.blink = -1; this.flashSq = -1; this.fall = null; this.recoil = null; this.shake = 0;
     this.effects = []; this.dim = false; this.spot = null; this.actorsMoving = 0; this.compSig = '';
-    Array.prototype.slice.call(this.layer.querySelectorAll('.hp,.exp,.lvup,.mini')).forEach(function (e) { e.remove(); });
+    if (keep && tk >= 0) this.talkers[tk] = performance.now() + 1e9; // 残す吹き出しの話し手は、Mini.show のとおり動かし続ける
+    G._hpV = null;
+    if (all) Amb.clear();
+    Array.prototype.slice.call(this.layer.querySelectorAll(all ? '.hp,.exp,.lvup,.mini' : '.hp,.exp,.mini')).forEach(function (e) { if (e !== keep) e.remove(); });
+    Amb.sync();
   };
 
   // ---------------- 移動の動き (21章) ----------------
@@ -4020,6 +4043,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
       this.apply(b, res);
       b.style.visibility = '';
       this.el = b;
+      b._talker = talkerSq != null && talkerSq >= 0 ? talkerSq : -1; // 話し手の升 (BV.resetFx が、残す吹き出しの話し手を確かめる)
       if (talkerSq != null && talkerSq >= 0) BV.talkers[talkerSq] = performance.now() + 1e9;
       // 53章: 時間では消さない。押す (吹き出し・空いている所・自分の次の手) と消える
       b.style.cursor = 'pointer';
@@ -4233,6 +4257,27 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     },
     // 自分の次の手を指したら、表示中の止めない文章は読み終えた扱いで消す
     onMove: function (human) { if (human) this.dismiss(); },
+    // 状態を画面に合わせる。ほかの後始末 (BV.resetFx・配置の組み直し) が吹き出しを外したのに、状態が残っているときに直す
+    //   1. 外された Mini.el が残っている → 空にする (pump が「ひとことが出ている間」と見て待ち続けない)
+    //   2. showing が真なのに、出しているはずの要素 (ひとことなら Mini.el、帯・語りなら curEl) が画面にない → 読み終えていないので、
+    //      yieldTo と同じく待ち行列の先頭へ戻し、少し待って出し直す
+    //   戻り値 true = 状態を直した
+    sync: function () {
+      var fixed = false;
+      if (Mini.el && !Mini.el.isConnected) { Mini.clear(); fixed = true; }
+      if (this.showing) {
+        var it = this.cur, el = it && (it.band || it.msg) ? this.curEl : Mini.el;
+        if (!el || !el.isConnected) {
+          trace('amb.sync', it && it.line ? it.line.text : '');
+          if (it) this.q.unshift(it);
+          if (this.timer) clearTimeout(this.timer);
+          this.timer = null; this.showing = false; this.cur = null; this.curEl = null;
+          fixed = true;
+        }
+      }
+      if (fixed && this.q.length) this.later(300);
+      return fixed;
+    },
     clear: function () { this.q = []; if (this.retry) clearTimeout(this.retry); this.retry = null; if (this.timer) clearTimeout(this.timer); this.timer = null; this.showing = false; this.cur = null; if (this.curEl) { this.curEl.remove(); this.curEl = null; } Mini.clear(); },
     idle: function () { return !this.showing && !this.q.length; }
   };
@@ -4453,6 +4498,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
       if (!Talk.layer.hidden && Talk.advance) { e.preventDefault(); Talk.advance(); return; }
       if (Sys.advance) { e.preventDefault(); Sys.advance(); return; }
     }
+    if (e.key === 'Escape' && CastleHelp.close) { e.preventDefault(); CastleHelp.close(); return; } // 囲いの形の小窓は Esc でも閉じる
     if (e.key === 'Escape' && !$('#menu').hidden) closeMenu();
   });
 
@@ -5353,9 +5399,10 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
 
   // ---------------- 道を選ぶ場面 ----------------
   // data = {lead, options:[{path,label,reply}]}。anchors(role) → 升
-  // always=true: 会話量「少ない」でも出す (道を決める選択: 開戦前・王の独白・密使)
+  // 会話量「少ない」でも出す (物語の分かれ道の選択は会話量と無関係。always は以前の呼び方の名残で、今は使わない)
   async function storyChoice(side, data, tok, anchors, ids, always) {
-    if (!isHumanSide(side) || G.story.choices >= 10 || (talkLevel() < 2 && !always)) return null;
+    void always;
+    if (!isHumanSide(side) || G.story.choices >= 10) return null;
     var lsq = anchors(data.lead.role);
     var idx = await Talk.choose(data.lead, data.options.map(function (o) { return o.label; }), { anchorSq: lsq, name: nameFor(data.lead, lsq) });
     if (!live(tok) || idx < 0) return null;
@@ -5406,7 +5453,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     return true;
   }
   async function captureScene(c) {
-    var lvl = talkLevel(), tok = c.tok, side = c.side, vs = side ^ 1;
+    var lvl = talkLevel(), few = lvl < 2, tok = c.tok, side = c.side, vs = side ^ 1; // few: 会話量「少ない」(物語の分かれ道に関わる台詞だけ)
     // S5: 台詞には今の軍 (side) と元の陣営 (orig) を別に渡す。打ち直された駒は今の軍の家を名乗らない
     var att = { type: c.mv.piece, side: side, orig: origSideOf(c.actor ? c.actor.id : idAt(c.fromSq)) }, vic = { type: c.vType, side: vs, orig: origSideOf(idAt(c.toSq)) };
     var testamentNow = (baseType(c.vType) === 'R' || baseType(c.vType) === 'B') && !G.tags.testament[vs];
@@ -5449,7 +5496,8 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
       if (chosen) { addPoint(side, chosen.path, { sq: c.fromSq, log: 'cap-' + chosen.kind }); G.story.choices++; G.story.capChoices++; approach = chosen.kind; cpuMoved(chosen.path); }
       else approach = 'nomercy';
     } else {
-      for (var i0 = 0; i0 < sc.pre.length; i0++) {
+      // 少ない: 説得の選択がない駒取りは前置きの台詞を出さない (帯・演出は残す)
+      if (!few) for (var i0 = 0; i0 < sc.pre.length; i0++) {
         var l0 = sc.pre[i0];
         await say(l0, sqOfRole(l0), l0.role === 'a' ? c.actor : null);
         if (!live(tok)) return null;
@@ -5465,8 +5513,9 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
       Talk.end();
       return { approach: 'nomercy', type: ctype };
     }
-    var last = testamentNow ? D.testament({ type: c.vType, side: vs }).line : sc.last;
-    if (G.story.decoyId != null && victimId === G.story.decoyId && !G.story.decoyFallen) { G.story.decoyFallen = { id: victimId, type: c.vType }; last = D.decoyFallLine(c.vType, vs); }
+    var last = testamentNow ? D.testament({ type: c.vType, side: vs }).line : sc.last, keepLast = testamentNow;
+    if (G.story.decoyId != null && victimId === G.story.decoyId && !G.story.decoyFallen) { G.story.decoyFallen = { id: victimId, type: c.vType }; last = D.decoyFallLine(c.vType, vs); keepLast = true; }
+    if (few && !keepLast) last = null; // 少ない: 駒取りの最後の台詞は出さない (遺言と身代わりの最期は結末の断片につながるので1行残す)
     if (last && plan.form === 'silent') await Amb.run(function () { return say(last, c.toSq); });
     else if (last) { await say(last, c.toSq); if (!live(tok)) return null; }
     var vh = houseOfId(victimId);
@@ -5495,8 +5544,11 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     if (lvl <= 1 || !full) dl = dl.slice(-1);
     if (plan.form === 'silent') dl = [];
     if (G.mode === 'cpu' && !c.human) dl = dl.slice(-1);
+    // 寝返った駒の迎え方の選択 (物語の分かれ道)。会話量と無関係に出す。少ないでは寝返りの言葉は選択の前置きの1行だけ (選択がなければ出さない)
+    var welcome = c.human && full && G.story.defChoices < 2 && G.story.choices < 10;
+    if (few && !welcome) dl = [];
     for (var i = 0; i < dl.length; i++) { await say(dl[i], null, null, { id: victimId }); if (!live(tok)) return null; }
-    if (c.human && lvl >= 2 && full && G.story.defChoices < 2 && G.story.choices < 10) {
+    if (welcome) {
       var dc = D.defectChoice({ captured: baseType(c.vType), newSide: side }); dc.logKey = 'welcome'; dc.moves = true;
       var got = await storyChoice(side, dc, tok, function (role) { return role === 'k' + side ? kingSq(c.st, side) : null; }, function (role) { return role === 'c' ? victimId : null; });
       if (!live(tok)) return null;
@@ -5526,25 +5578,25 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
   async function promoteSceneBody(c, tok, side, sign, t, pid) {
     var ex = Exp.show(BV.anchor(c.toSq, c.actor));
     if (!(await Exp.fill(ex, tok))) return null;
-    var promote;
+    var promote, few = talkLevel() < 2; // 少ない: 成る・成らないの選択は出し、そのあとのひとことは出さない
     Talk.begin([c.toSq]);
     if (c.optional && c.human) {
       var pr = D.promote({ type: t, side: side, orig: origSideOf(pid) });
       var idx = await Talk.choose(pr.pre, pr.options, { real: true, anchorSq: c.toSq, actor: c.actor, keep: [c.fromSq, c.toSq], name: nameFor(pr.pre, null, pid) }); // 再ゲート (C-3): 動かす駒の元と先を隠さない
       if (!live(tok)) return null;
       promote = idx === 0;
-      if (promote) { if (!(await levelUp(c.actor, sign, c.toSq, tok))) return null; ex.remove(); await Amb.run(function () { return say(pr.yes, c.toSq); }); }
-      else { Exp.enough(ex); await Amb.run(function () { return say(pr.no, c.toSq); }); }
+      if (promote) { if (!(await levelUp(c.actor, sign, c.toSq, tok))) return null; ex.remove(); if (!few) await Amb.run(function () { return say(pr.yes, c.toSq); }); }
+      else { Exp.enough(ex); if (!few) await Amb.run(function () { return say(pr.no, c.toSq); }); }
     } else if (c.optional) {
       promote = !!c.mv.promote;
-      if (promote) { if (!(await levelUp(c.actor, sign, c.toSq, tok))) return null; ex.remove(); await Amb.run(function () { return say(D.postPromote({ type: t, side: side, orig: origSideOf(pid) }), c.toSq); }); }
-      else { Exp.enough(ex); await Amb.run(function () { return say(D.stay({ type: t, side: side, orig: origSideOf(pid) }), c.toSq); }); }
+      if (promote) { if (!(await levelUp(c.actor, sign, c.toSq, tok))) return null; ex.remove(); if (!few) await Amb.run(function () { return say(D.postPromote({ type: t, side: side, orig: origSideOf(pid) }), c.toSq); }); }
+      else { Exp.enough(ex); if (!few) await Amb.run(function () { return say(D.stay({ type: t, side: side, orig: origSideOf(pid) }), c.toSq); }); }
     } else {
       promote = true;
       if (!(await levelUp(c.actor, sign, c.toSq, tok))) return null;
       ex.remove();
       var fl = D.forcedPromote({ type: t, side: side, orig: origSideOf(pid) });
-      await Amb.run(async function () { for (var i = 0; i < fl.length; i++) await say(fl[i], c.toSq); });
+      if (!few) await Amb.run(async function () { for (var i = 0; i < fl.length; i++) await say(fl[i], c.toSq); });
     }
     if (!live(tok)) return null;
     Talk.end();
@@ -5598,6 +5650,11 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     var side = c.side, base = baseType(c.vType), nick = nickFull(vid, c.vType, side);
     var rs = D.returnScene(base, side, nick, G.houses ? G.houses[vid] : null);
     var al = nearAllies(BV.state, side, c.toSq, 2, -1);
+    if (talkLevel() < 2) { // 少ない: 帰還の台詞は1行 (迎える仲間の言葉。仲間がいなければ本人の言葉)
+      if (al.length) await say(D.line('w', typeOf(BV.state.board[al[0]]), side, 'joy', rs.welcome.text), al[0]);
+      else await say(rs.reply, null, null, { id: vid });
+      return live(tok);
+    }
     if (al.length) { await say(D.line('w', typeOf(BV.state.board[al[0]]), side, 'joy', rs.welcome.text), al[0]); if (!live(tok)) return false; }
     await say(rs.reply, null, null, { id: vid }); if (!live(tok)) return false;
     if (full && rs.doubt) {
@@ -5642,7 +5699,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     // 同じ軍の光・和の気質の駒の嫌悪 (止めない)
     var dq = nearAllies(st, side, c.toSq, 1, caster)[0];
     await Amb.run(async function () {
-      if (!block) for (var j = 0; j < lines.length; j++) await say(lines[j][0], lines[j][1], null, lines[j][2] != null ? { id: lines[j][2] } : null);
+      if (!block && talkLevel() >= 2) for (var j = 0; j < lines.length; j++) await say(lines[j][0], lines[j][1], null, lines[j][2] != null ? { id: lines[j][2] } : null); // 少ない: 術者・死人の台詞は出さず帯だけ
       if (dq != null && dq >= 0 && talkLevel() >= 2) await say(D.line('d', typeOf(st.board[dq]), side, 'hurt', sc.disgust.text), dq);
     });
     return { handledCheck: false };
@@ -5711,6 +5768,11 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     }
     if (mate && lvl >= 2) { Sys.flash(900); await wait(RM ? 0 : 900); if (!live(tok)) return null; }
     Talk.end();
+    // 少ない: 帰還した駒が自陣に戻った印 (reunited) だけ立てる (王の言葉は出さない)
+    if (lvl < 2) {
+      var fd0 = fateOf(did);
+      if (fd0 && fd0.state === 'returned' && zone === 'home' && !(G.story.reunited || {})[did]) { G.story.reunited = G.story.reunited || {}; G.story.reunited[did] = true; }
+    }
     // 打つ場面の短い一言は止めない (37章)。歩は1行
     if (lvl >= 2) await Amb.run(async function () {
       var lines = sm.after.slice(0, pawn ? 1 : 2);
@@ -5788,7 +5850,13 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
         if (ev.type === 'collapse') await Sys.band('砦が破られた!', info.story + '(' + info.name + ')', 1000);
         else await Sys.band(info.story + ' 完成', ev.type === 'develop' ? '砦が高くなった — ' + info.name : info.name, 1100);
         if (!live(tok)) return false;
-        if (lvl < 2) continue;
+        if (lvl < 2) {
+          // 少ない: 助言の囲いが完成したら目印を止める (状態だけ。近衛の言葉は出さない)
+          var adv0 = G.story.advice;
+          if (!(G.mode === 'cpu' && side !== G.human) && adv0 && adv0.id && adv0.advisor != null && ev.type !== 'collapse' && side === (G.state.turn ^ 1) && isHumanSide(side) &&
+              (ev.id === adv0.id || ({ mino: 1, takamino: 1, ginkan: 1 }[ev.id] && { mino: 1, takamino: 1, ginkan: 1 }[adv0.id]))) adv0.active = false;
+          continue;
+        }
         var cpuSide = G.mode === 'cpu' && side !== G.human;
         if (cpuSide) {
           var rs = G.human, rl = D.castleReaction(ev.type === 'collapse' ? 'collapse' : 'complete', ev.id, rs);
@@ -5838,8 +5906,10 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
   // まだ出ていない王の独白 (必ず出す止める会話) の分を、ほかの止める会話の予算から空けておく
   function tempoReserve() { return (G.mode === 'cpu' ? !G.story.monologue[G.human] : !(G.story.monologue[0] && G.story.monologue[1])) && G.story.choices < 10 ? 5500 : 0; }
   // 戻り値: true = 出した / 'blocked' = 予算・間隔で今は出せない / false = 候補なし
+  // 会話量「少ない」: 選び方・予算・既出の印 (seenEns)・回数は「ふつう」と同じに進める (物語の分かれ道の状態を会話量で変えない)。
+  // 見せるのは選択肢を含む会話だけで、選択の直前の1行 + 選択 + 返答の1行に縮める。選択肢のない会話は出さずに「出した」扱い (既出の印も立てる)
   async function runEnsemble(trigger, side, tok, extra, opts) {
-    if (talkLevel() < 2) return false;
+    var few = talkLevel() < 2;
     opts = opts || {};
     var st = G.state, T = G.story.tempo, ply = st.ply;
     var cpuSide = G.mode === 'cpu' && side !== G.human;
@@ -5877,9 +5947,15 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
       if (!ok) return false;
       G.story.seenEns[sc.id] = true; G.story.ensCount++;
       D.tempoSpend(T, ply, 'ensemble', est);
+      var lines = sc.lines;
+      if (few) {
+        if (!hasChoice) { trace('ens.few', sc.id); return true; } // 選択肢のない会話は出さない
+        var ci0 = -1; for (var k0 = 0; k0 < lines.length && ci0 < 0; k0++) if (!Array.isArray(lines[k0])) ci0 = k0;
+        lines = lines.slice(Math.max(0, ci0 - 1), ci0 + 1); // 選択の直前の1行と選択 (選択のあとの行は出さない)
+      }
       Talk.begin(Object.keys(roleSq).map(function (r) { return roleSq[r]; }));
-      for (var i = 0; i < sc.lines.length; i++) {
-        var e = sc.lines[i];
+      for (var i = 0; i < lines.length; i++) {
+        var e = lines[i];
         if (Array.isArray(e)) {
           var sq = roleSq[e[0]];
           await say(D.ensembleLine(e, typeOf(st.board[sq]), side), sq);
@@ -6024,8 +6100,10 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     }
     return out;
   }
+  // 会話量「少ない」: 幕間の選び方・予算・延期・印 (G.story.furi・adviceSoon) は「ふつう」と同じに進め、見せるのは向かい飛車の選択だけ
+  // (選択の直前の2行 + 選択 + 返答の1行)。ほかの幕間は台詞を出さずに「出した」扱い
   async function furiScene(ns, tok) {
-    if (talkLevel() < 2) return false;
+    var few = talkLevel() < 2;
     var r = D.furiInterlude(G.stack, G.story.furi);
     G.story.furi = r.mem;
     var pk = r.pick; if (!pk) return false;
@@ -6040,8 +6118,11 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     if (!D.tempoCan(T, ply, est + tempoReserve())) { G.story.furi = D.furiDefer(G.story.furi, pk); trace('furi.defer', pk.id); return false; }
     D.tempoSpend(T, ply, 'furi', est);
     trace('furi', pk.id + ' ' + pk.side);
+    var choiceHere = mukai && !cpuSide;
+    if (few && !choiceHere) { if (pk.id === 'shiken' && !cpuSide) G.story.adviceSoon = true; return true; }
+    var from = few ? Math.max(0, lines.length - 2) : 0; // 少ない: 選択の直前の2行だけ
     Talk.begin(sqs.filter(function (q) { return q >= 0; }));
-    for (var i = 0; i < lines.length; i++) {
+    for (var i = from; i < lines.length; i++) {
       if (sqs[i] < 0 && lines[i].role !== 'h') continue; // 役の駒が盤にいなければ、その行は飛ばす
       await say(lines[i], sqs[i]);
       if (!live(tok)) return null;
@@ -6088,6 +6169,75 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     });
     return best;
   }
+  // ---------------- 囲いの形の小窓 (囲いの助言で囲いを選んだあと) ----------------
+  // 説明文は data/castle_help/castle_help.md の文をそのまま (変えない)。駒の位置は dialogue.js の CASTLES と castleSquares から取る (形を二重に書かない)
+  var CASTLE_HELP = {
+    funa: '玉を飛車から遠ざけ、金と銀で固める形。少ない手数で組めるが、守りは薄い。',
+    mino: '玉を隅の近くへ寄せ、銀と金二枚で横から守る形。振り飛車でよく使い、横からの攻めに強い。',
+    takamino: '美濃囲いの金を一段上げた形。上からの攻めにも備えられる。',
+    ginkan: '高美濃から銀を玉の頭へ上げ、冠のようにした形。上からの攻めに強く、崩れにくい。',
+    hidarimino: '居飛車のまま、美濃囲いと同じ形に組む。玉の周りが広く、組みやすい。',
+    yagura: '金と銀を玉の上に積み上げた城。正面からの攻めに強いが、組むのに手数がかかる。',
+    ianaguma: '玉を隅に潜らせ、香・銀・金でふたをする形。王手がかかりにくいが、組むのに手数がかかる。',
+    fanaguma: '振り飛車で組む穴熊。玉を隅に潜らせ、香・銀・金でふたをする。'
+  };
+  var CastleHelp = {
+    CW: 24, CH: 26, BASE: 18, close: null,
+    castle: function (id) { return D.CASTLES.filter(function (c) { return c.id === id; })[0] || null; },
+    // 盤図の駒: 自陣の下3段 (row 0〜2、2 が手前) × 9筋 (col 0〜8、左から)。後手は盤を 180度回した向き (自陣が手前) で描く
+    cells: function (id, side) {
+      var c = this.castle(id); if (!c) return [];
+      return D.castleSquares(c, side).map(function (q) {
+        var x = q.sq % 9, y = (q.sq / 9) | 0;
+        if (side === 1) { x = 8 - x; y = 8 - y; }
+        return { t: q.t, col: x, row: y - 6 };
+      });
+    },
+    // 1倍の canvas に描く (色は盤のパレット PAL・駒は盤と同じ pieceSprite)
+    board: function (id, side) {
+      var CW = this.CW, CH = this.CH, W = 9 * CW + 1, H = 3 * CH + 1, cv = newCanvas(W, H), x = cv.getContext('2d'), base = this.BASE;
+      x.imageSmoothingEnabled = false;
+      x.fillStyle = rgbStr(PAL.goldLo); x.fillRect(0, 0, W, H);
+      x.fillStyle = rgbStr(PAL.edge);
+      for (var i = 0; i <= 9; i++) x.fillRect(i * CW, 0, 1, H);
+      for (var j = 0; j <= 3; j++) x.fillRect(0, j * CH, W, 1);
+      cv._cells = this.cells(id, side).filter(function (q) { return q.row >= 0 && q.row < 3 && q.col >= 0 && q.col < 9; });
+      cv._cells.forEach(function (q) {
+        var spr = pieceSprite((side === 0 ? 1 : -1) * E.TYPES.indexOf(q.t), base, '', side);
+        x.drawImage(spr.c, q.col * CW + 1 + ((CW - 1 - spr.w) >> 1), q.row * CH + 1 + ((CH - 1 - spr.h) >> 1));
+      });
+      cv.className = 'ch-board'; cv.style.width = W + 'px'; cv.style.height = H + 'px';
+      return cv;
+    },
+    // 小窓を出し、押す (窓の外でもよい)・Enter/Space/Esc で閉じるまで待つ。取り消し (Sys.cancelAll) でも閉じる。戻り値 = 出したか
+    show: function (id, side, tok) {
+      var c = this.castle(id), text = CASTLE_HELP[id], self = this;
+      if (!c || !text || (tok != null && !live(tok))) return Promise.resolve(false);
+      trace('castleHelp', id + ' ' + side);
+      UiRects.clearSoft();
+      var catcher = document.createElement('div'); catcher.className = 'ch-catch';
+      var o = document.createElement('div'); o.className = 'kwin sysbox castle-help' + (RM ? '' : ' appear');
+      var inn = document.createElement('div'); inn.className = 'in'; o.appendChild(inn);
+      var h = document.createElement('h3'); h.textContent = c.name; inn.appendChild(h);
+      var cv = this.board(id, side); inn.appendChild(cv);
+      var p = document.createElement('p'); p.textContent = text; inn.appendChild(p);
+      o.setAttribute('data-castle', id); o.setAttribute('data-side', String(side));
+      Sys.root.appendChild(catcher); Sys.root.appendChild(o);
+      return new Promise(function (res) {
+        var done = false;
+        function fin() {
+          if (done) return; done = true;
+          o.remove(); catcher.remove();
+          if (Sys.advance === fin) Sys.advance = null;
+          if (self.close === fin) self.close = null;
+          Sys.pending = Sys.pending.filter(function (f) { return f !== fin; });
+          res(true);
+        }
+        o.addEventListener('click', fin); catcher.addEventListener('click', fin);
+        Sys.advance = fin; self.close = fin; Sys.pending.push(fin);
+      });
+    }
+  };
   async function adviceScene(side, tok) {
     var st = G.state, asq = advisorSq(st, side);
     G.story.advice = { decided: true, active: false };
@@ -6106,6 +6256,9 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
       G.story.advice = { decided: true, active: o.id !== 'attack', id: o.id, advisor: aid, st: null };
     }
     Talk.end();
+    // 返答のあと、選んだ囲いの形を小窓で見せる (「今は攻めだ」では出さない。会話量に関係なく出す)。
+    // 会話の層を閉じてから出す (盤を暗くしない・会話の層の押す所と重ねない)。閉じるまで待つ (G.busy のまま)
+    if (idx >= 0 && opts.options[idx].id !== 'attack') { await CastleHelp.show(opts.options[idx].id, side, tok); if (!live(tok)) return; }
     G.busy = false; refreshHud();
   }
   // 目印: 次に動かすとよい駒と行き先 (合法手だけ。相手の手番・攻撃を受けている間は出さない)
@@ -6170,9 +6323,9 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
       await Amb.run(async function () { await Sys.band('一直線に、敵の本陣へ', '', 1000); if (lvl >= 2) await say(D.chargeLine(typeOf(ns.board[toSq]), side), toSq); });
       if (!live(tok)) return false;
     }
-    // 身代わり (敵の王が王手を受け、王以外の駒で防いだ)
+    // 身代わり (敵の王が王手を受け、王以外の駒で防いだ)。結末の断片につながるので会話量と無関係に立てる (台詞は1行、止めない)
     var enemySide = G.mode === 'cpu' ? side !== G.human : true;
-    if (enemySide && D.isDecoy(E.isCheck(st, side), m) && evAllowed('decoy') && lvl >= 2 && ns.board[toSq]) {
+    if (enemySide && D.isDecoy(E.isCheck(st, side), m) && evAllowed('decoy') && ns.board[toSq]) {
       evUse('decoy'); G.story.decoyId = idAt(toSq);
       await Amb.run(function () { return say(D.decoyLine(typeOf(ns.board[toSq]), side), toSq); });
     }
@@ -6263,7 +6416,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
           optsC.forEach(function (o) { var n0 = E.applyMove(st, o); if (n0.lastMove.check) { givesCheck = true; nsC = n0; } if (!nsC) nsC = n0; });
           // 同じ手番に止める場面 (王の独白・白河の救出) が来るなら、駒取りは無言にする (1手番に1つまで)
           var mono = givesCheck && isHumanSide(side ^ 1) && !G.story.monologue[side ^ 1] && G.story.choices < 10 && !E.isOver(nsC);
-          G._shirakawa = !givesCheck && isHumanSide(side) && G.field && G.field.id === 'river' && evAllowed('shirakawa') && talkLevel() >= 2 && Math.random() < 0.45;
+          G._shirakawa = !givesCheck && isHumanSide(side) && G.field && G.field.id === 'river' && evAllowed('shirakawa') && Math.random() < 0.45; // 白河の救出は物語の分かれ道なので会話量と無関係
           var cr = await captureScene({ st: st, mv: mv0, side: side, fromSq: fromSq, toSq: toSq, actor: actor, vType: typeOf(victim), human: human, tok: tok, givesCheck: givesCheck, forceSilent: mono || G._shirakawa || (fev && (fev.type === 'death' || fev.type === 'fall')), fev: fev, mono: mono || G._shirakawa });
           if (!live(tok) || !cr) return;
         } else if (!(await animateMove(actor, fromSq, toSq, tok))) return;
@@ -7191,7 +7344,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     Array.prototype.forEach.call(document.querySelectorAll('#sys .crow, #screen .crow'), function (el) { el.remove(); });
     G.confirming = false; G.silent = false; G.busy = false;
     BV.unbind = null; BV.stir = 0;
-    BV.resetFx();
+    BV.resetFx(true); // 取り消し: LEVEL UP! も吹き出しも外す
     G._hpV = null;
   }
   async function startGame(opts) {
@@ -7227,6 +7380,10 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
       if (talkLevel() >= 2) {
         var pl = D.prelude();
         for (var i = 0; i < pl.length; i++) { await say(pl[i], ks[pl[i].side]); if (!live(tok)) return; }
+      } else {
+        // 少ない: 選択の意味が分かる2行 (宝玉についての両王の言い分) だけ
+        var pl1 = D.prelude().slice(2, 4);
+        for (var i1 = 0; i1 < pl1.length; i1++) { await say(pl1[i1], ks[pl1[i1].side]); if (!live(tok)) return; }
       }
       // 王の選択は会話量「少ない」でも出す (物語の道が決まるように)
       var choosers = G.mode === 'cpu' ? [G.human] : [0, 1];
@@ -7259,7 +7416,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
     restoreStory();
     clearSel();
     SND.play('cancel');
-    BV.resetFx();
+    BV.resetFx(true);
     renderBoard();
     nextTurn();
   }
@@ -7701,6 +7858,7 @@ canvas.tbm { display: block; margin: 0 auto; image-rendering: pixelated; }
       Journal: Journal, Prologue: Prologue, EndPager: EndPager, UnitInfo: UnitInfo, finishGame: finishGame, narrate: narrate, nickFull: nickFull, cancelFlows: cancelFlows, Amb: Amb, Mini: Mini, Sys: Sys, UiRects: UiRects, komaCanvas: komaCanvas, KOMA: KOMA, MapScene: MapScene, MapGeo: MapGeo, PixPal: PixPal, faceCanvas: faceCanvas, sceneAt: function (ply, rain) { window.__sceneOverride = ply == null ? null : { ply: ply, rain: !!rain }; refreshHud(); BV.compSig = ''; BV.draw(); }, loadJournal: function (d) { return Journal.resume(d); },
       // 63章 レビュー修正: 検査用 (字のビットマップ・傾いた駒の字の置き場所・ロゴの配置・上の帯の押せる所・文字の読み込み)
       PAL: PAL, glyph: glyph, tiltKanjiPlace: function () { return tiltPlaceCache; }, logoBoxes: function () { return LOGO_BOXES; }, TapBar: TapBar, FontGate: FontGate, PathUI: PathUI, // PathUI: 再レビュー修正 (S5) の検査用 (道の印の寸法)
+      CastleHelp: CastleHelp, CASTLE_HELP: CASTLE_HELP, adviceScene: adviceScene, storyChoice: storyChoice, runEnsemble: runEnsemble, furiScene: furiScene, captureScene: captureScene, storyEvents: storyEvents, talkLevel: talkLevel, // 会話量「少ない」・囲いの小窓の検査用
       G: G, BV: BV, Talk: Talk, S: S, E: E, D: D, FieldPick: FieldPick, CPU: CPU, startGame: startGame, runMove: runMove, watchdogFire: watchdogFire, onSquare: onSquare, undo: undo, resign: resign, declare: declare,
       load: function (sfen) {
         cancelFlows(); G.state = E.fromSfen(sfen); G.stack = [G.state]; G.storyAt = []; G.over = null; G.story = G.story || newStory(); assignNicks();

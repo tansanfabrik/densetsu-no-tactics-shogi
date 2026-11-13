@@ -3102,7 +3102,7 @@
     line: function (role, type, side, face, text) { return mk(role, type, side, face, fill(text, side)); },
     persuadeExtraRounds: persuadeExtraRounds, persuadeRound: persuadeRound, persuadeRetort: persuadeRetort,
     CASTLE_TALK: CASTLE_TALK, CASTLE_DEVELOP: CASTLE_DEVELOP,
-    detectCastle: detectCastle, castleTransition: castleTransition, castleStep: castleStep, CASTLE_GRACE: CASTLE_GRACE, reachableKeys: reachableKeys, castleTalk: castleTalk, castleReaction: castleReaction, igyokuWarning: igyokuWarning, castleInfo: castleInfo,
+    detectCastle: detectCastle, castleSquares: castleSquares, castleTransition: castleTransition, castleStep: castleStep, CASTLE_GRACE: CASTLE_GRACE, reachableKeys: reachableKeys, castleTalk: castleTalk, castleReaction: castleReaction, igyokuWarning: igyokuWarning, castleInfo: castleInfo,
     NICKS: NICKS, nickLabel: nickLabel, trackIdentities: trackIdentities, assignNicknames: assignNicknames,
     phaseOf: phaseOf, rainSchedule: rainSchedule, rainAt: rainAt, RAIN_NARR: RAIN_NARR,
     CAPTURE_TYPES: CAPTURE_TYPES, pickCaptureType: pickCaptureType, nextCaptureState: nextCaptureState, persuadeAllowed: persuadeAllowed, captureScript: captureScript,
